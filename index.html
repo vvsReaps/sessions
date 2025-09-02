@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trading Sessions — ET (Weekend-aware)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0f1115; --muted:#9aa0a6; --card:#151923; --ring:#202637; --text:#e6e9ef;
+            --asia:#3b82f6; --london:#22c55e; --ny:#ef4444; --closed:#6b7280; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
+         background:radial-gradient(1200px 800px at 50% -10%,#1b2130 0%,var(--bg) 55%);
+         color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .wrap{width:100%;max-width:980px}
+    h1{margin:0 0 8px;font-weight:700;letter-spacing:.2px;font-size:clamp(24px,3.2vw,36px);text-align:center}
+    .sub{color:var(--muted);text-align:center;margin-bottom:12px;font-size:14px}
+    .pill{padding:2px 8px;border-radius:999px;border:1px solid var(--ring);background:rgba(255,255,255,.03)}
+    .banner{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 18px}
+    .status{border:1px dashed var(--ring);background:rgba(255,255,255,.03);padding:8px 10px;border-radius:10px;font-size:13px}
+    .strong{font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 40%),var(--card);
+          border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05)}
+    .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+    .dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.05) inset}
+    .badge{font-size:12px;padding:6px 10px;border-radius:999px;letter-spacing:.3px;border:1px solid var(--ring);background:rgba(255,255,255,.03)}
+    .label{color:var(--muted);font-size:12px;margin-bottom:10px}
+    .timer{font-variant-numeric:tabular-nums;font-size:28px;font-weight:800;letter-spacing:.5px;margin:6px 0 12px}
+    .bar{height:10px;width:100%;background:#0e1320;border:1px solid var(--ring);border-radius:999px;overflow:hidden}
+    .fill{height:100%;width:0%;transition:width .6s ease}
+    .row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:10px}
+    .asia .dot,.asia .fill{background:var(--asia)}
+    .london .dot,.london .fill{background:var(--london)}
+    .newyork .dot,.newyork .fill{background:var(--ny)}
+    .closed .dot{background:var(--closed)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Trading Sessions — Live</h1>
+    <div class="sub">
+      Local: <span id="localNow"></span> · UTC: <span id="utcNow"></span> ·
+      <span id="tzLabel"></span>: <span id="etNow"></span>
+      <br/>
+      <span class="pill" id="asiaWindow"></span>
+      <span class="pill" id="londonWindow"></span>
+      <span class="pill" id="nyWindow"></span>
+    </div>
+
+    <!-- Weekend/Lull + Maintenance banners -->
+    <div class="banner">
+      <div class="status" id="lullStatus">—</div>
+      <div class="status" id="maintStatus">—</div>
+    </div>
+
+    <div class="grid">
+      <div class="card asia" id="asiaCard">
+        <div class="head"><div class="title"><span class="dot"></span> Asia</div><div class="badge" id="asiaStatus">—</div></div>
+        <div class="label" id="asiaLabel">—</div>
+        <div class="timer" id="asiaTimer">--:--:--</div>
+        <div class="bar"><div class="fill" id="asiaFill"></div></div>
+        <div class="row"><span>Open: <strong id="asiaOpenET"></strong></span><span>Close: <strong id="asiaCloseET"></strong></span></div>
+      </div>
+
+      <div class="card london" id="londonCard">
+        <div class="head"><div class="title"><span class="dot"></span> London</div><div class="badge" id="londonStatus">—</div></div>
+        <div class="label" id="londonLabel">—</div>
+        <div class="timer" id="londonTimer">--:--:--</div>
+        <div class="bar"><div class="fill" id="londonFill"></div></div>
+        <div class="row"><span>Open: <strong id="londonOpenET"></strong></span><span>Close: <strong id="londonCloseET"></strong></span></div>
+      </div>
+
+      <div class="card newyork" id="nyCard">
+        <div class="head"><div class="title"><span class="dot"></span> New York</div><div class="badge" id="nyStatus">—</div></div>
+        <div class="label" id="nyLabel">—</div>
+        <div class="timer" id="nyTimer">--:--:--</div>
+        <div class="bar"><div class="fill" id="nyFill"></div></div>
+        <div class="row"><span>Open: <strong id="nyOpenET"></strong></span><span>Close: <strong id="nyCloseET"></strong></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== SETTINGS =====
+    const DISPLAY_TZ = 'America/New_York';          // ET w/ DST
+    const USE_FIXED_EST = false;                    // set true for fixed UTC-5 year-round
+    const FIXED_EST_TZ = 'Etc/GMT+5';
+
+    // Sessions in ET (DST-proof)
+    // Asia 19:00–04:00, London 03:00–12:00, New York 08:00–17:00
+    const SESSIONS_ET = [
+      { id:'asia',   name:'Asia',     openET:19*60, closeET:4*60,  wraps:true  },
+      { id:'london', name:'London',   openET:3*60,  closeET:12*60, wraps:false },
+      { id:'ny',     name:'New York', openET:8*60,  closeET:17*60, wraps:false }
+    ];
+
+    // Maintenance window every trading day (not on weekend): 17:00–19:00 ET
+    const MAINT_START_ET = 17*60;
+    const MAINT_END_ET   = 19*60;
+
+    // Weekend closure: Fri 17:00 ET → Sun 17:00 ET
+    const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+
+    // ===== HELPERS =====
+    const pad2 = n => n.toString().padStart(2,'0');
+    const fmtHMS = ms => {
+      const s = Math.max(0, Math.floor(ms/1000));
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+      return `${pad2(h)}:${pad2(m)}:${pad2(ss)}`;
+    };
+    const tzForDisplay = () => USE_FIXED_EST ? FIXED_EST_TZ : DISPLAY_TZ;
+
+    function partsInTZ(date, tz){
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', second:'2-digit',
+        weekday:'short', hour12:false
+      }).formatToParts(date).reduce((a,p)=>{ a[p.type]=p.value; return a; }, {});
+    }
+    function etSeconds(date, tz){
+      const p = partsInTZ(date, tz);
+      return (+p.hour)*3600 + (+p.minute)*60 + (+p.second);
+    }
+    function etMinutes(date, tz){ return etSeconds(date, tz)/60; }
+    function etWeekdayIndex(date, tz){
+      const wd = partsInTZ(date, tz).weekday; // "Sun".."Sat"
+      return DOW[wd];
+    }
+    function formatETLabel(mins){
+      const h = Math.floor(((mins%1440)+1440)%1440 / 60);
+      const m = Math.floor(((mins%60)+60)%60);
+      const abbr = new Intl.DateTimeFormat([], { timeZone: tzForDisplay(), timeZoneName:'short' })
+                    .format(new Date()).split(' ').pop();
+      return `${pad2(h)}:${pad2(m)} ${abbr}`;
+    }
+
+    // minutes until target DOW/min in ET (can be > 1440 for future days)
+    function minutesUntilDOW(nowDayIdx, nowMins, targetDayIdx, targetMins){
+      let dayDelta = (targetDayIdx - nowDayIdx + 7) % 7;
+      if (dayDelta === 0 && targetMins <= nowMins) dayDelta = 7;
+      return dayDelta*1440 + (targetMins - nowMins);
+    }
+    function msUntilFromET(nowSecs, targetMinutesAhead){
+      return Math.max(0, targetMinutesAhead) * 60 * 1000;
+    }
+
+    // session state for normal trading days
+    function sessionStateET(nowMinET, openET, closeET, wraps){
+      const inOpen = wraps ? (nowMinET >= openET || nowMinET < closeET)
+                           : (nowMinET >= openET && nowMinET < closeET);
+      let nextChangeMin, prevChangeMin, windowStart, windowEnd;
+      if (inOpen){
+        nextChangeMin = wraps ? (nowMinET >= openET ? (24*60 + closeET) : closeET) : closeET;
+        prevChangeMin = wraps ? (nowMinET >= openET ? openET : (openET - 24*60)) : openET;
+        windowStart = prevChangeMin;
+        windowEnd   = nextChangeMin;
+      } else {
+        const nextOpen = (wraps && nowMinET < closeET) ? openET
+                       : (nowMinET < openET ? openET : 24*60 + openET);
+        const lastClose = (wraps && nowMinET >= closeET && nowMinET < openET) ? closeET
+                         : (nowMinET >= closeET ? closeET : closeET - 24*60);
+        nextChangeMin = nextOpen;
+        prevChangeMin = lastClose;
+        windowStart = nextOpen;
+        windowEnd   = wraps ? (nextOpen < closeET ? closeET : 24*60 + closeET) : (nextOpen + (closeET - openET));
+      }
+      return { isOpen: inOpen, nextChangeMin, prevChangeMin, windowStart, windowEnd };
+    }
+
+    function isWeekendClosed(nowDayIdx, nowMinET){
+      // Fri >= 17:00  OR  Sat any  OR  Sun < 17:00
+      if (nowDayIdx === DOW.Fri && nowMinET >= 17*60) return true;
+      if (nowDayIdx === DOW.Sat) return true;
+      if (nowDayIdx === DOW.Sun && nowMinET < 17*60) return true;
+      return false;
+    }
+
+    // ===== RENDER =====
+    function updateUI(){
+      const now = new Date();
+      const tz = tzForDisplay();
+      const utcNow = new Date(now.getTime() + now.getTimezoneOffset()*60000);
+      const etSecs = etSeconds(now, tz);
+      const etMins = etSecs/60;
+      const dayIdx = etWeekdayIndex(now, tz);
+      const tzShort = new Intl.DateTimeFormat([], { timeZone: tz, timeZoneName:'short' }).format(now).split(' ').pop();
+
+      // header
+      document.getElementById('localNow').textContent = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      document.getElementById('utcNow').textContent   = `${pad2(utcNow.getUTCHours())}:${pad2(utcNow.getUTCMinutes())}:${pad2(utcNow.getUTCSeconds())}`;
+      document.getElementById('etNow').textContent    = new Intl.DateTimeFormat([], { timeZone: tz, hour:'2-digit', minute:'2-digit', second:'2-digit' }).format(now);
+      document.getElementById('tzLabel').textContent  = USE_FIXED_EST ? 'EST (fixed UTC-5)' : `ET (${tzShort})`;
+
+      // windows text (in ET)
+      document.getElementById('asiaWindow').textContent   = `Asia ${formatETLabel(19*60)}–${formatETLabel(4*60)}`;
+      document.getElementById('londonWindow').textContent = `London ${formatETLabel(3*60)}–${formatETLabel(12*60)}`;
+      document.getElementById('nyWindow').textContent     = `New York ${formatETLabel(8*60)}–${formatETLabel(17*60)}`;
+
+      const weekend = isWeekendClosed(dayIdx, etMins);
+
+      // ----- BANNERS -----
+      const lullEl = document.getElementById('lullStatus');
+      const maintEl = document.getElementById('maintStatus');
+
+      if (weekend){
+        // Weekend banner
+        const minsToAsiaSun = minutesUntilDOW(dayIdx, etMins, DOW.Sun, 19*60);  // Sun 7:00 PM ET
+        lullEl.innerHTML = `<span class="strong">Weekend — market closed</span> · Asia opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToAsiaSun))}</span>`;
+        // Maintenance resumes Mon 5 PM
+        const minsToMaintMon = minutesUntilDOW(dayIdx, etMins, DOW.Mon, 17*60);
+        maintEl.innerHTML = `🔧 Maintenance resumes ${formatETLabel(17*60)} Mon · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToMaintMon))}</span>`;
+      } else {
+        // Non-weekend banners as before
+        // Lull = none open right now
+        const openNow = [];
+        SESSIONS_ET.forEach(s => {
+          const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
+          if (st.isOpen) openNow.push(s.name);
+        });
+        if (openNow.length === 0){
+          // next session to open today/tomorrow
+          let best = Infinity, who = '';
+          SESSIONS_ET.forEach(s => {
+            const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
+            const mins = st.nextChangeMin - etMins < 0 ? (st.nextChangeMin - etMins + 1440) : (st.nextChangeMin - etMins);
+            if (mins < best){ best = mins; who = s.name; }
+          });
+          lullEl.innerHTML = `<span class="strong">Lull</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+        } else {
+          lullEl.innerHTML = `<span class="strong">Open now</span>: ${openNow.join(' · ')}`;
+        }
+
+        // Maintenance banner (trading days only)
+        const inMaint = etMins >= MAINT_START_ET && etMins < MAINT_END_ET;
+        if (inMaint){
+          maintEl.innerHTML = `🔧 <span class="strong">Maintenance / Rollover</span> ${formatETLabel(MAINT_START_ET)}–${formatETLabel(MAINT_END_ET)} · ends in <span class="strong">${fmtHMS(msUntilFromET(etSecs, MAINT_END_ET - etMins))}</span>`;
+        } else {
+          const nextStart = etMins < MAINT_START_ET ? MAINT_START_ET : (24*60 + MAINT_START_ET);
+          maintEl.innerHTML = `🔧 Maintenance ${formatETLabel(MAINT_START_ET)}–${formatETLabel(MAINT_END_ET)} · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, nextStart - etMins))}</span>`;
+        }
+      }
+
+      // ----- CARDS -----
+      SESSIONS_ET.forEach(s => {
+        const statusEl = document.getElementById(`${s.id}Status`);
+        const labelEl  = document.getElementById(`${s.id}Label`);
+        const timerEl  = document.getElementById(`${s.id}Timer`);
+        const fillEl   = document.getElementById(`${s.id}Fill`);
+        const cardEl   = document.getElementById(`${s.id}Card`);
+
+        document.getElementById(`${s.id}OpenET`).textContent  = formatETLabel(s.openET);
+        document.getElementById(`${s.id}CloseET`).textContent = formatETLabel(s.closeET);
+
+        if (weekend){
+          // All closed — timers to next session-specific open after weekend
+          let targetDay = s.id === 'asia' ? DOW.Sun : DOW.Mon;
+          let targetMin = s.id === 'asia' ? 19*60 : (s.id === 'london' ? 3*60 : 8*60);
+          const minsAhead = minutesUntilDOW(dayIdx, etMins, targetDay, targetMin);
+          statusEl.textContent = 'CLOSED';
+          labelEl.textContent  = 'Opens in';
+          timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, minsAhead));
+          fillEl.style.width   = '0%';
+          cardEl.classList.add('closed');
+          return;
+        }
+
+        // Normal trading day
+        const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
+        if (st.isOpen){
+          statusEl.textContent = 'OPEN';
+          labelEl.textContent  = 'Closes in';
+          timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
+          // progress through open window
+          const total = (st.windowEnd - st.windowStart + 1440) % 1440 || 1440;
+          const done  = (etMins - st.windowStart + 1440) % 1440;
+          fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
+          cardEl.classList.remove('closed');
+        } else {
+          statusEl.textContent = 'CLOSED';
+          labelEl.textContent  = 'Opens in';
+          timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
+          // progress waiting
+          const total = (st.nextChangeMin - st.prevChangeMin + 1440) % 1440 || 1440;
+          const done  = (etMins - st.prevChangeMin + 1440) % 1440;
+          fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
+          cardEl.classList.add('closed');
+        }
+      });
+    }
+
+    updateUI();
+    setInterval(updateUI, 1000);
+  </script>
+</body>
+</html>
