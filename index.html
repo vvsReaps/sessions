@@ -104,9 +104,9 @@
       { id:'ny',     name:'New York', openET:8*60,  closeET:17*60, wraps:false }
     ];
 
-    // Maintenance window every trading day (not on weekend): 17:00–19:00 ET
-     = 17*60;
-    const MAINT_END_ET   = 18*60;
+    // Maintenance window every trading day (not on weekend): 17:00–18:00 ET
+    const MAINT_START_ET = 17*60; // 5:00 PM
+    const MAINT_END_ET   = 18*60; // 6:00 PM
 
     // Weekend closure: Fri 17:00 ET → Sun 17:00 ET
     const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
@@ -229,7 +229,7 @@
           if (st.isOpen) openNow.push(s.name);
         });
 
-        // NEW: Sunday pre-Asia market open window (18:00–19:00 ET)
+        // Sunday pre-Asia market open window (18:00–19:00 ET)
         const preAsiaOpen = (dayIdx === DOW.Sun && etMins >= 18*60 && etMins < 19*60);
 
         if (openNow.length === 0){
