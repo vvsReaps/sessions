@@ -222,21 +222,31 @@
         const minsToMaintMon = minutesUntilDOW(dayIdx, etMins, DOW.Mon, 17*60);
         maintEl.innerHTML = `🔧 Maintenance resumes ${formatETLabel(17*60)} Mon · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToMaintMon))}</span>`;
       } else {
-        // Non-weekend banners as before
+        // Who's open right now?
         const openNow = [];
         SESSIONS_ET.forEach(s => {
           const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
           if (st.isOpen) openNow.push(s.name);
         });
+
+        // NEW: Sunday pre-Asia market open window (17:00–19:00 ET)
+        const preAsiaOpen = (dayIdx === DOW.Sun && etMins >= 17*60 && etMins < 19*60);
+
         if (openNow.length === 0){
-          // next session to open today/tomorrow
+          // next session to open
           let best = Infinity, who = '';
           SESSIONS_ET.forEach(s => {
             const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
             const mins = st.nextChangeMin - etMins < 0 ? (st.nextChangeMin - etMins + 1440) : (st.nextChangeMin - etMins);
             if (mins < best){ best = mins; who = s.name; }
           });
-          lullEl.innerHTML = `<span class="strong">Closed</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+
+          if (preAsiaOpen){
+            // Market is open even though no session yet
+            lullEl.innerHTML = `<span class="strong">Market OPEN — Pre-Asia</span> · Asia session begins in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+          } else {
+            lullEl.innerHTML = `<span class="strong">Closed</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+          }
           lullEl.classList.add('primary');
         } else {
           lullEl.innerHTML = `<span class="strong">Open now</span>: ${openNow.join(' · ')}`;
