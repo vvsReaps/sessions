@@ -236,7 +236,7 @@
             const mins = st.nextChangeMin - etMins < 0 ? (st.nextChangeMin - etMins + 1440) : (st.nextChangeMin - etMins);
             if (mins < best){ best = mins; who = s.name; }
           });
-          lullEl.innerHTML = `<span class="strong">Lull</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+          lullEl.innerHTML = `<span class="strong">Closed</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
           lullEl.classList.add('primary');
         } else {
           lullEl.innerHTML = `<span class="strong">Open now</span>: ${openNow.join(' · ')}`;
