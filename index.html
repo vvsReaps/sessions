@@ -17,6 +17,14 @@
     .pill{padding:2px 8px;border-radius:999px;border:1px solid var(--ring);background:rgba(255,255,255,.03)}
     .banner{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 18px}
     .status{border:1px dashed var(--ring);background:rgba(255,255,255,.03);padding:8px 10px;border-radius:10px;font-size:13px}
+    /* BIG headline for current state (lull/weekend/open) */
+    .status.primary{
+      font-size: clamp(18px, 2.8vw, 32px);
+      font-weight: 800;
+      padding: 12px 16px;
+      border-width: 2px;
+      letter-spacing: .2px;
+    }
     .strong{font-weight:700}
     .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
     @media (max-width:860px){.grid{grid-template-columns:1fr}}
@@ -209,12 +217,12 @@
         // Weekend banner
         const minsToAsiaSun = minutesUntilDOW(dayIdx, etMins, DOW.Sun, 19*60);  // Sun 7:00 PM ET
         lullEl.innerHTML = `<span class="strong">Weekend — market closed</span> · Asia opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToAsiaSun))}</span>`;
+        lullEl.classList.add('primary');
         // Maintenance resumes Mon 5 PM
         const minsToMaintMon = minutesUntilDOW(dayIdx, etMins, DOW.Mon, 17*60);
         maintEl.innerHTML = `🔧 Maintenance resumes ${formatETLabel(17*60)} Mon · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToMaintMon))}</span>`;
       } else {
         // Non-weekend banners as before
-        // Lull = none open right now
         const openNow = [];
         SESSIONS_ET.forEach(s => {
           const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
@@ -229,8 +237,10 @@
             if (mins < best){ best = mins; who = s.name; }
           });
           lullEl.innerHTML = `<span class="strong">Lull</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+          lullEl.classList.add('primary');
         } else {
           lullEl.innerHTML = `<span class="strong">Open now</span>: ${openNow.join(' · ')}`;
+          lullEl.classList.add('primary');
         }
 
         // Maintenance banner (trading days only)
@@ -273,7 +283,6 @@
           statusEl.textContent = 'OPEN';
           labelEl.textContent  = 'Closes in';
           timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
-          // progress through open window
           const total = (st.windowEnd - st.windowStart + 1440) % 1440 || 1440;
           const done  = (etMins - st.windowStart + 1440) % 1440;
           fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
@@ -282,7 +291,6 @@
           statusEl.textContent = 'CLOSED';
           labelEl.textContent  = 'Opens in';
           timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
-          // progress waiting
           const total = (st.nextChangeMin - st.prevChangeMin + 1440) % 1440 || 1440;
           const done  = (etMins - st.prevChangeMin + 1440) % 1440;
           fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
