@@ -225,7 +225,7 @@
           if (betweenSessions){
             lullEl.innerHTML = `<span class="strong">Market OPEN — Between Sessions</span> · Asia session begins in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
           } else {
-            lullEl.innerHTML = `<span class="strong">Closed</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
+            lullEl.innerHTML = `<span class="strong">Market Closed</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
           }
           lullEl.classList.add('primary');
         } else {
