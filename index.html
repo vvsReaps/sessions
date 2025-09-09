@@ -1,295 +1,314 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sessions | Reaps</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monthly P/L Calendar + Dashboard</title>
   <style>
-    :root { --bg:#0f1115; --muted:#9aa0a6; --card:#151923; --ring:#202637; --text:#e6e9ef;
-            --asia:#3b82f6; --london:#22c55e; --ny:#ef4444; --closed:#6b7280; }
+    :root{ --bg:#0b0b0d; --panel:#131316; --panel-soft:#1a1b1f; --line:#24252b; --muted:#a3a3ad; --pos:#38d39f; --neg:#ff6b6b; --text:#e9e9f0; }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
-         background:radial-gradient(1200px 800px at 50% -10%,#1b2130 0%,var(--bg) 55%);
-         color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-    .wrap{width:100%;max-width:980px}
-    h1{margin:0 0 8px;font-weight:700;letter-spacing:.2px;font-size:clamp(24px,3.2vw,36px);text-align:center}
-    .sub{color:var(--muted);text-align:center;margin-bottom:12px;font-size:14px}
-    .pill{padding:2px 8px;border-radius:999px;border:1px solid var(--ring);background:rgba(255,255,255,.03)}
-    .banner{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 18px}
-    .status{border:1px dashed var(--ring);background:rgba(255,255,255,.03);padding:8px 10px;border-radius:10px;font-size:13px}
-    .status.primary{
-      font-size: clamp(18px, 2.8vw, 32px);
-      font-weight: 800;
-      padding: 12px 16px;
-      border-width: 2px;
-      letter-spacing: .2px;
-    }
-    .strong{font-weight:700}
-    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-    @media (max-width:860px){.grid{grid-template-columns:1fr}}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 40%),var(--card);
-          border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05)}
-    .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-    .title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
-    .dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.05) inset}
-    .badge{font-size:12px;padding:6px 10px;border-radius:999px;letter-spacing:.3px;border:1px solid var(--ring);background:rgba(255,255,255,.03)}
-    .label{color:var(--muted);font-size:12px;margin-bottom:10px}
-    .timer{font-variant-numeric:tabular-nums;font-size:28px;font-weight:800;letter-spacing:.5px;margin:6px 0 12px}
-    .bar{height:10px;width:100%;background:#0e1320;border:1px solid var(--ring);border-radius:999px;overflow:hidden}
-    .fill{height:100%;width:0%;transition:width .6s ease}
-    .row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:10px}
-    .asia .dot,.asia .fill{background:var(--asia)}
-    .london .dot,.london .fill{background:var(--london)}
-    .newyork .dot,.newyork .fill{background:var(--ny)}
-    .closed .dot{background:var(--closed)}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .title{font-weight:700;font-size:22px}
+    .controls{display:flex;gap:8px;align-items:center;color:var(--muted)}
+    .btn{background:var(--panel-soft);border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:10px;cursor:pointer}
+    .btn:hover{filter:brightness(1.07)}
+
+    .cal{border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .grid-8{display:grid;grid-template-columns:repeat(8, minmax(0,1fr))}
+    .head{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0));backdrop-filter:saturate(130%) blur(2px)}
+    .cell{border-right:1px solid var(--line);height:96px;padding:8px;cursor:pointer}
+    .wcell{height:96px;padding:8px;border-left:1px solid var(--line);background:var(--panel)}
+    .row{border-top:1px solid var(--line)}
+    .dim{opacity:.45}
+    .dhead{padding:8px;color:var(--muted);font-size:12px;font-weight:600}
+    .dtop{display:flex;align-items:flex-start;justify-content:space-between;color:var(--muted);font-size:11px}
+    .pnl{margin-top:6px;font-weight:700}
+    .pnl.pos{color:#a5f3c7}
+    .pnl.neg{color:#ffb2b2}
+    .legend{display:flex;gap:10px;align-items:center;color:var(--muted);margin-top:10px}
+    .dot{width:12px;height:12px;border-radius:3px}
+    .flatbg{background:#212227}
+    .g1{background:rgba(16,185,129,.18)} .g2{background:rgba(16,185,129,.28)} .g3{background:rgba(16,185,129,.38)} .g4{background:rgba(16,185,129,.48)} .g5{background:rgba(16,185,129,.6)}
+    .r1{background:rgba(244,63,94,.18)} .r2{background:rgba(244,63,94,.28)} .r3{background:rgba(244,63,94,.38)} .r4{background:rgba(244,63,94,.48)} .r5{background:rgba(244,63,94,.6)}
+    @media (max-width: 720px){ .cell,.wcell{height:82px} body{font-size:13px} }
+
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .modal{width:min(720px,100%);background:#121216;border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+    .modal-h{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .modal-h h3{margin:0;font-size:16px}
+    .modal-b{padding:16px;display:grid;gap:12px}
+    .modal-f{display:flex;justify-content:flex-end;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}
+    .inp, .ta{width:100%;background:#0e0f12;border:1px solid #2a2b31;color:var(--text);border-radius:10px;padding:8px}
+    .row-flex{display:flex;gap:8px;align-items:center}
+    .trade-row{display:flex;gap:8px;margin-bottom:8px}
+    .small{font-size:12px;color:var(--muted)}
+    .danger{background:#2a1114;border-color:#5a1b22}
+
+    /* KPI cards */
+    .kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px}
+    @media (max-width:860px){.kpi-grid{grid-template-columns:1fr}}
+    .kcard{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 40%),var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .klabel{color:var(--muted);font-size:12px;margin-bottom:8px}
+    .kvalue{font-weight:800;font-size:22px}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Trading Sessions — Live</h1>
-    <div class="sub">
-      Local: <span id="localNow"></span> · UTC: <span id="utcNow"></span> ·
-      <span id="tzLabel"></span>: <span id="etNow"></span>
-      <br/>
-      <span class="pill" id="asiaWindow"></span>
-      <span class="pill" id="londonWindow"></span>
-      <span class="pill" id="nyWindow"></span>
+    <div class="header">
+      <div class="title">Monthly P/L: <span id="monthSum" class="sum" style="color:var(--pos)">$0.00</span></div>
+      <div class="controls">
+        <button class="btn" id="prevBtn">◀</button>
+        <div id="monthLabel"></div>
+        <button class="btn" id="nextBtn">▶</button>
+      </div>
     </div>
 
-    <div class="banner">
-      <div class="status" id="lullStatus">—</div>
-      <div class="status" id="maintStatus">—</div>
+    <div class="cal">
+      <div class="grid-8 head">
+        <div class="dhead">Su</div><div class="dhead">Mo</div><div class="dhead">Tu</div><div class="dhead">We</div><div class="dhead">Th</div><div class="dhead">Fr</div><div class="dhead">Sa</div>
+        <div class="dhead" style="text-align:right">Week</div>
+      </div>
+      <div id="rows"></div>
     </div>
 
-    <div class="grid">
-      <div class="card asia" id="asiaCard">
-        <div class="head"><div class="title"><span class="dot"></span> Asia</div><div class="badge" id="asiaStatus">—</div></div>
-        <div class="label" id="asiaLabel">—</div>
-        <div class="timer" id="asiaTimer">--:--:--</div>
-        <div class="bar"><div class="fill" id="asiaFill"></div></div>
-        <div class="row"><span>Open: <strong id="asiaOpenET"></strong></span><span>Close: <strong id="asiaCloseET"></strong></span></div>
-      </div>
+    <div class="legend">
+      <div class="dot flatbg"></div><span>Default / No data</span>
+      <div class="dot g3"></div><span>Positive day</span>
+      <div class="dot r3"></div><span>Negative day</span>
+    </div>
+    <p style="color:var(--muted);margin-top:8px;font-size:12px">Click a day to add trades, P&L per trade, and notes. Data saves to your browser.</p>
 
-      <div class="card london" id="londonCard">
-        <div class="head"><div class="title"><span class="dot"></span> London</div><div class="badge" id="londonStatus">—</div></div>
-        <div class="label" id="londonLabel">—</div>
-        <div class="timer" id="londonTimer">--:--:--</div>
-        <div class="bar"><div class="fill" id="londonFill"></div></div>
-        <div class="row"><span>Open: <strong id="londonOpenET"></strong></span><span>Close: <strong id="londonCloseET"></strong></span></div>
-      </div>
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kcard"><div class="klabel">Total P&L</div><div id="k_total" class="kvalue">—</div></div>
+      <div class="kcard"><div class="klabel">Trade Win %</div><div id="k_winrate" class="kvalue">—</div></div>
+      <div class="kcard"><div class="klabel">Avg Win / Avg Loss</div><div id="k_avg" class="kvalue">—</div></div>
+      <div class="kcard"><div class="klabel">Day Win %</div><div id="k_daywin" class="kvalue">—</div></div>
+      <div class="kcard"><div class="klabel">Profit Factor</div><div id="k_pf" class="kvalue">—</div></div>
+      <div class="kcard"><div class="klabel">Best Day % of Total Profit</div><div id="k_bestpct" class="kvalue">—</div></div>
+    </div>
+  </div>
 
-      <div class="card newyork" id="nyCard">
-        <div class="head"><div class="title"><span class="dot"></span> New York</div><div class="badge" id="nyStatus">—</div></div>
-        <div class="label" id="nyLabel">—</div>
-        <div class="timer" id="nyTimer">--:--:--</div>
-        <div class="bar"><div class="fill" id="nyFill"></div></div>
-        <div class="row"><span>Open: <strong id="nyOpenET"></strong></span><span>Close: <strong id="nyCloseET"></strong></span></div>
+  <!-- Modal -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-h">
+        <h3 id="modalTitle">Edit Day</h3>
+        <button class="btn" id="closeBtn">✕</button>
+      </div>
+      <div class="modal-b">
+        <div class="small">Enter each trade's P&L (positive or negative). We'll total them for the day.</div>
+        <div id="tradeList"></div>
+        <div class="row-flex">
+          <button class="btn" id="addTrade">+ Add trade</button>
+          <div class="small">Trades: <span id="tradeCount">0</span> | Day Total: <span id="dayTotal">$0.00</span></div>
+        </div>
+        <div>
+          <label class="small" for="notes">Notes</label>
+          <textarea id="notes" class="ta" rows="4" placeholder="What happened today? Strategy, mistakes, news, etc."></textarea>
+        </div>
+      </div>
+      <div class="modal-f">
+        <button class="btn danger" id="deleteDay">Delete Day</button>
+        <button class="btn" id="saveDay">Save</button>
       </div>
     </div>
   </div>
 
   <script>
-    // ===== SETTINGS =====
-    const DISPLAY_TZ = 'America/New_York';
-    const USE_FIXED_EST = false;       // set true to force fixed UTC-5
-    const FIXED_EST_TZ = 'Etc/GMT+5';
+    // === STORAGE ===
+    const KEY = 'pl_calendar_data_v3';
+    function loadData(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}'); }catch{ return {}; } }
+    function saveData(map){ localStorage.setItem(KEY, JSON.stringify(map)); }
 
-    // Sessions in ET: Asia 19:00–04:00, London 03:00–12:00, New York 08:00–17:00
-    const SESSIONS_ET = [
-      { id:'asia',   name:'Asia',     openET:19*60, closeET:4*60,  wraps:true  },
-      { id:'london', name:'London',   openET:3*60,  closeET:12*60, wraps:false },
-      { id:'ny',     name:'New York', openET:8*60,  closeET:17*60, wraps:false }
-    ];
+    // === HELPERS ===
+    const fmt = new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2});
+    function iso(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+    function startOfWeekSun(d){ const x=new Date(d); x.setDate(x.getDate()-x.getDay()); x.setHours(0,0,0,0); return x; }
+    function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+    function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+    function shadeClass(total){ if(total==null||total===0) return 'flatbg'; const abs=Math.min(Math.abs(total),1000); const step=Math.max(1, Math.ceil((abs/1000)*5)); return total>0?`g${step}`:`r${step}`; }
 
-    // Maintenance: 17:00–18:00 ET
-    const MAINT_START_ET = 17*60;
-    const MAINT_END_ET   = 18*60;
+    // === STATE ===
+    let DATA = loadData(); // { 'YYYY-MM-DD': {trades:[num,...], notes:''} }
+    let current = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-    // Weekend closed: Fri 17:00 ET → Sun 17:00 ET
-    const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+    // === UI REFS ===
+    const monthLabel = document.getElementById('monthLabel');
+    const monthSum = document.getElementById('monthSum');
+    const rowsEl = document.getElementById('rows');
 
-    // ===== HELPERS =====
-    const pad2 = n => n.toString().padStart(2,'0');
-    const fmtHMS = ms => {
-      const s = Math.max(0, Math.floor(ms/1000));
-      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
-      return `${pad2(h)}:${pad2(m)}:${pad2(ss)}`;
-    };
-    const tzForDisplay = () => USE_FIXED_EST ? FIXED_EST_TZ : DISPLAY_TZ;
+    document.getElementById('prevBtn').addEventListener('click',()=>{ current = new Date(current.getFullYear(), current.getMonth()-1, 1); render(); });
+    document.getElementById('nextBtn').addEventListener('click',()=>{ current = new Date(current.getFullYear(), current.getMonth()+1, 1); render(); });
 
-    function partsInTZ(date, tz){
-      return new Intl.DateTimeFormat('en-US', {
-        timeZone: tz,
-        year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', second:'2-digit',
-        weekday:'short', hour12:false
-      }).formatToParts(date).reduce((a,p)=>{ a[p.type]=p.value; return a; }, {});
+    // === MODAL ===
+    const overlay = document.getElementById('overlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const tradeList = document.getElementById('tradeList');
+    const tradeCount = document.getElementById('tradeCount');
+    const dayTotalEl = document.getElementById('dayTotal');
+    const notesEl = document.getElementById('notes');
+    const closeBtn = document.getElementById('closeBtn');
+    const addBtn = document.getElementById('addTrade');
+    const saveBtn = document.getElementById('saveDay');
+    const deleteBtn = document.getElementById('deleteDay');
+
+    let editingDate = null;
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+    addBtn.addEventListener('click', ()=> addTradeInput(''));
+    saveBtn.addEventListener('click', saveModal);
+    deleteBtn.addEventListener('click', ()=>{ if(editingDate){ delete DATA[editingDate]; saveData(DATA); closeModal(); render(); } });
+
+    function openModal(dateStr){
+      editingDate = dateStr;
+      modalTitle.textContent = `Edit ${dateStr}`;
+      tradeList.innerHTML = '';
+      const day = DATA[dateStr] || { trades: [], notes: '' };
+      notesEl.value = day.notes || '';
+      if(day.trades.length === 0) addTradeInput(''); else day.trades.forEach(v=>addTradeInput(v));
+      recalc();
+      overlay.style.display = 'flex';
+      setTimeout(()=>{ const first = tradeList.querySelector('input'); if(first) first.focus(); }, 0);
     }
-    function etSeconds(date, tz){ const p=partsInTZ(date,tz); return (+p.hour)*3600+(+p.minute)*60+(+p.second); }
-    function etMinutes(date, tz){ return etSeconds(date,tz)/60; }
-    function etWeekdayIndex(date, tz){
-      const wd = partsInTZ(date, tz).weekday; return DOW[wd];
-    }
-    function formatETLabel(mins){
-      const h=Math.floor(((mins%1440)+1440)%1440/60);
-      const m=Math.floor(((mins%60)+60)%60);
-      const abbr=new Intl.DateTimeFormat([], { timeZone: tzForDisplay(), timeZoneName: 'short' })
-                 .format(new Date()).split(' ').pop();
-      return `${pad2(h)}:${pad2(m)} ${abbr}`;
-    }
-    function minutesUntilDOW(nowDayIdx, nowMins, targetDayIdx, targetMins){
-      let dayDelta=(targetDayIdx-nowDayIdx+7)%7;
-      if(dayDelta===0 && targetMins<=nowMins) dayDelta=7;
-      return dayDelta*1440 + (targetMins-nowMins);
-    }
-    function msUntilFromET(nowSecs, minutesAhead){ return Math.max(0, minutesAhead)*60*1000; }
+    function closeModal(){ overlay.style.display = 'none'; editingDate = null; }
 
-    // Session math (handles wrap-around sessions like Asia)
-    function sessionStateET(nowMinET, openET, closeET, wraps){
-      const inOpen = wraps ? (nowMinET>=openET || nowMinET<closeET)
-                           : (nowMinET>=openET && nowMinET<closeET);
-      let nextChangeMin, prevChangeMin, windowStart, windowEnd;
-      if (inOpen){
-        nextChangeMin = wraps ? (nowMinET>=openET ? 24*60+closeET : closeET) : closeET;
-        prevChangeMin = wraps ? (nowMinET>=openET ? openET : openET-24*60)    : openET;
-        windowStart = prevChangeMin; windowEnd = nextChangeMin;
-      } else {
-        const nextOpen  = (wraps && nowMinET<closeET) ? openET : (nowMinET<openET ? openET : 24*60+openET);
-        const lastClose = (wraps && nowMinET>=closeET && nowMinET<openET) ? closeET : (nowMinET>=closeET ? closeET : closeET-24*60);
-        nextChangeMin = nextOpen; prevChangeMin = lastClose;
-        windowStart = nextOpen; windowEnd = wraps ? (nextOpen<closeET ? closeET : 24*60+closeET)
-                                                  : (nextOpen + (closeET-openET));
+    function addTradeInput(value){
+      const row = document.createElement('div');
+      row.className = 'trade-row';
+      row.innerHTML = `
+        <input type="number" step="0.01" class="inp" placeholder="P&L" value="${value}" />
+        <button class="btn" title="Remove">🗑</button>
+      `;
+      const input = row.querySelector('input');
+      const del = row.querySelector('button');
+      input.addEventListener('input', recalc);
+      del.addEventListener('click', ()=>{ row.remove(); recalc(); });
+      tradeList.appendChild(row);
+      recalc();
+    }
+
+    function gatherTrades(){
+      return Array.from(tradeList.querySelectorAll('input'))
+        .map(i=>Number(i.value))
+        .filter(v=>!Number.isNaN(v));
+    }
+
+    function recalc(){
+      const vals = gatherTrades();
+      const total = vals.reduce((a,b)=>a+b,0);
+      tradeCount.textContent = vals.length;
+      dayTotalEl.textContent = fmt.format(total);
+    }
+
+    function saveModal(){
+      const vals = gatherTrades();
+      DATA[editingDate] = { trades: vals, notes: notesEl.value };
+      saveData(DATA);
+      closeModal();
+      render();
+    }
+
+    // ===== DASHBOARD STATS =====
+    function getMonthStats(){
+      let totalPL=0, trades=0, wins=0, losses=0, grossWin=0, grossLoss=0;
+      const dayTotals = {};
+      Object.entries(DATA).forEach(([k,v])=>{
+        const [Y,M,D]=k.split('-').map(Number);
+        const dt=new Date(Y,M-1,D);
+        if(dt.getFullYear()!==current.getFullYear() || dt.getMonth()!==current.getMonth()) return;
+        const arr=(v.trades||[]).filter(x=>!Number.isNaN(x));
+        if(arr.length===0) return;
+        const daySum = arr.reduce((a,b)=>a+b,0);
+        dayTotals[k]=daySum; totalPL += daySum;
+        arr.forEach(x=>{ if(x>0){ wins++; grossWin+=x; } else if(x<0){ losses++; grossLoss+=-x; } trades++; });
+      });
+      const dayCount = Object.keys(dayTotals).length;
+      const dayWins = Object.values(dayTotals).filter(v=>v>0).length;
+      const avgWin = wins? grossWin/wins : 0;
+      const avgLoss = losses? grossLoss/losses : 0;
+      const profitFactor = grossLoss>0 ? (grossWin/grossLoss) : null;
+      const bestDayProfit = Math.max(0, ...Object.values(dayTotals));
+      const bestPct = grossWin>0 ? (bestDayProfit/grossWin*100) : 0;
+      return { totalPL, trades, wins, losses, winRate: trades? (wins/trades*100):0, avgWin, avgLoss, dayWinRate: dayCount? (dayWins/dayCount*100):null, pf: profitFactor, bestPct };
+    }
+    function updateMetrics(s){
+      const el = (id)=>document.getElementById(id);
+      const fmtC = (n)=> new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
+      el('k_total').textContent = fmtC(s.totalPL);
+      el('k_total').style.color = s.totalPL>=0? 'var(--pos)' : 'var(--neg)';
+      el('k_winrate').textContent = s.trades? `${s.winRate.toFixed(2)}%` : 'No trades';
+      el('k_avg').innerHTML = s.trades? `<span style="color:var(--pos)">${fmtC(s.avgWin)}</span> / <span style="color:var(--neg)">-${fmtC(s.avgLoss)}</span>` : '—';
+      el('k_daywin').textContent = s.dayWinRate==null? 'No trades' : `${s.dayWinRate.toFixed(2)}%`;
+      el('k_pf').textContent = s.pf==null? '—' : s.pf.toFixed(2);
+      el('k_bestpct').textContent = `${s.bestPct.toFixed(2)}%`;
+    }
+
+    // === RENDER CALENDAR ===
+    function render(){
+      monthLabel.textContent = current.toLocaleString(undefined,{month:'long',year:'numeric'});
+
+      const mStart = new Date(current.getFullYear(), current.getMonth(), 1);
+      const mEnd = endOfMonth(mStart);
+      const gridStart = startOfWeekSun(mStart);
+      const gridEnd = addDays(startOfWeekSun(addDays(mEnd, 6)), 6);
+
+      const weeks = []; let tmp=[];
+      for(let d = new Date(gridStart); d<=gridEnd; d = addDays(d,1)){
+        tmp.push(new Date(d)); if(tmp.length===7){ weeks.push(tmp); tmp=[]; }
       }
-      return { isOpen: inOpen, nextChangeMin, prevChangeMin, windowStart, windowEnd };
-    }
 
-    function isWeekendClosed(nowDayIdx, nowMinET){
-      if (nowDayIdx===DOW.Fri && nowMinET>=17*60) return true;
-      if (nowDayIdx===DOW.Sat) return true;
-      if (nowDayIdx===DOW.Sun && nowMinET<17*60) return true;
-      return false;
-    }
+      // month total
+      let monthTotal = 0;
+      Object.entries(DATA).forEach(([k,v])=>{
+        const [Y,M,D]=k.split('-').map(Number);
+        const dt=new Date(Y,M-1,D);
+        if(dt.getFullYear()===current.getFullYear() && dt.getMonth()===current.getMonth()){
+          const sum=(v.trades||[]).reduce((a,b)=>a+b,0);
+          monthTotal += sum;
+        }
+      });
+      monthSum.textContent = fmt.format(monthTotal);
+      monthSum.style.color = monthTotal >= 0 ? 'var(--pos)' : 'var(--neg)';
+      updateMetrics(getMonthStats());
 
-    // ===== RENDER =====
-    function updateUI(){
-      const now = new Date();
-      const tz = tzForDisplay();
-      const utcNow = new Date(now.getTime()+now.getTimezoneOffset()*60000);
-      const etSecs = etSeconds(now, tz);
-      const etMins = etSecs/60;
-      const dayIdx = etWeekdayIndex(now, tz);
-      const tzShort = new Intl.DateTimeFormat([], { timeZone: tz, timeZoneName:'short' }).format(now).split(' ').pop();
+      rowsEl.innerHTML = '';
+      weeks.forEach((week)=>{
+        const row = document.createElement('div');
+        row.className = 'grid-8 row';
 
-      // header
-      document.getElementById('localNow').textContent = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      document.getElementById('utcNow').textContent   = `${pad2(utcNow.getUTCHours())}:${pad2(utcNow.getUTCMinutes())}:${pad2(utcNow.getUTCSeconds())}`;
-      document.getElementById('etNow').textContent    = new Intl.DateTimeFormat([], { timeZone: tz, hour:'2-digit', minute:'2-digit', second:'2-digit' }).format(now);
-      document.getElementById('tzLabel').textContent  = USE_FIXED_EST ? 'EST (fixed UTC-5)' : `ET (${tzShort})`;
-
-      // session window pills
-      document.getElementById('asiaWindow').textContent   = `Asia ${formatETLabel(19*60)}–${formatETLabel(4*60)}`;
-      document.getElementById('londonWindow').textContent = `London ${formatETLabel(3*60)}–${formatETLabel(12*60)}`;
-      document.getElementById('nyWindow').textContent     = `New York ${formatETLabel(8*60)}–${formatETLabel(17*60)}`;
-
-      const weekend = isWeekendClosed(dayIdx, etMins);
-      const lullEl  = document.getElementById('lullStatus');
-      const maintEl = document.getElementById('maintStatus');
-
-      if (weekend){
-        // Weekend banner
-        const minsToAsiaSun = minutesUntilDOW(dayIdx, etMins, DOW.Sun, 19*60);
-        lullEl.innerHTML = `<span class="strong">Weekend — market closed</span> · Asia opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToAsiaSun))}</span>`;
-        lullEl.classList.add('primary');
-        const minsToMaintMon = minutesUntilDOW(dayIdx, etMins, DOW.Mon, 17*60);
-        maintEl.innerHTML = `🔧 Maintenance resumes ${formatETLabel(17*60)} Mon · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToMaintMon))}</span>`;
-      } else {
-        // Sessions open?
-        const openNow = [];
-        SESSIONS_ET.forEach(s => {
-          const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
-          if (st.isOpen) openNow.push(s.name);
+        let wsum = 0;
+        week.forEach(d=>{
+          const key = iso(d);
+          const entry = DATA[key];
+          const total = entry ? (entry.trades||[]).reduce((a,b)=>a+b,0) : null;
+          if(total!=null) wsum += total;
+          const c = document.createElement('div');
+          const inMonth = d.getMonth()===current.getMonth();
+          c.className = 'cell ' + (total==null ? 'flatbg' : shadeClass(total)) + (inMonth ? '' : ' dim');
+          c.dataset.date = key;
+          c.innerHTML = `
+            <div class="dtop"><span>${d.getDate()}</span>${entry?`<span>${(entry.trades||[]).length} trades</span>`:''}</div>
+            <div class="pnl ${total>=0?'pos':'neg'}">${total!=null? (total<0?'-':'')+fmt.format(Math.abs(total)) : ''}</div>
+          `;
+          c.addEventListener('click', ()=> openModal(key));
+          row.appendChild(c);
         });
 
-        // Market-open gap after maintenance each trading day: 18:00–19:00 ET
-        const betweenSessions = (etMins >= 18*60 && etMins < 19*60);
-
-        if (openNow.length === 0){
-          // Next session to open
-          let best = Infinity, who = '';
-          SESSIONS_ET.forEach(s => {
-            const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
-            const mins = st.nextChangeMin - etMins < 0 ? (st.nextChangeMin - etMins + 1440) : (st.nextChangeMin - etMins);
-            if (mins < best){ best = mins; who = s.name; }
-          });
-
-          if (betweenSessions){
-            lullEl.innerHTML = `<span class="strong">Market OPEN — Between Sessions</span> · Asia session begins in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
-          } else {
-            lullEl.innerHTML = `<span class="strong">Market Closed</span> — no sessions open · ${who} opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
-          }
-          lullEl.classList.add('primary');
-        } else {
-          lullEl.innerHTML = `<span class="strong">Open now</span>: ${openNow.join(' · ')}`;
-          lullEl.classList.add('primary');
-        }
-
-        // Maintenance banner (trading days only)
-        const inMaint = etMins >= MAINT_START_ET && etMins < MAINT_END_ET;
-        if (inMaint){
-          maintEl.innerHTML = `🔧 <span class="strong">Maintenance / Rollover</span> ${formatETLabel(MAINT_START_ET)}–${formatETLabel(MAINT_END_ET)} · ends in <span class="strong">${fmtHMS(msUntilFromET(etSecs, MAINT_END_ET - etMins))}</span>`;
-        } else {
-          const nextStart = etMins < MAINT_START_ET ? MAINT_START_ET : (24*60 + MAINT_START_ET);
-          maintEl.innerHTML = `🔧 Maintenance ${formatETLabel(MAINT_START_ET)}–${formatETLabel(MAINT_END_ET)} · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, nextStart - etMins))}</span>`;
-        }
-      }
-
-      // ----- CARDS -----
-      SESSIONS_ET.forEach(s => {
-        const statusEl = document.getElementById(`${s.id}Status`);
-        const labelEl  = document.getElementById(`${s.id}Label`);
-        const timerEl  = document.getElementById(`${s.id}Timer`);
-        const fillEl   = document.getElementById(`${s.id}Fill`);
-        const cardEl   = document.getElementById(`${s.id}Card`);
-
-        document.getElementById(`${s.id}OpenET`).textContent  = formatETLabel(s.openET);
-        document.getElementById(`${s.id}CloseET`).textContent = formatETLabel(s.closeET);
-
-        if (weekend){
-          // All closed until after weekend
-          let targetDay = s.id === 'asia' ? DOW.Sun : DOW.Mon;
-          let targetMin = s.id === 'asia' ? 19*60 : (s.id === 'london' ? 3*60 : 8*60);
-          const minsAhead = minutesUntilDOW(dayIdx, etMins, targetDay, targetMin);
-          statusEl.textContent = 'CLOSED';
-          labelEl.textContent  = 'Opens in';
-          timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, minsAhead));
-          fillEl.style.width   = '0%';
-          cardEl.classList.add('closed');
-          return;
-        }
-
-        const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
-        if (st.isOpen){
-          statusEl.textContent = 'OPEN';
-          labelEl.textContent  = 'Closes in';
-          timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
-          const total = (st.windowEnd - st.windowStart + 1440) % 1440 || 1440;
-          const done  = (etMins - st.windowStart + 1440) % 1440;
-          fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
-          cardEl.classList.remove('closed');
-        } else {
-          statusEl.textContent = 'CLOSED';
-          labelEl.textContent  = 'Opens in';
-          timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
-          const total = (st.nextChangeMin - st.prevChangeMin + 1440) % 1440 || 1440;
-          const done  = (etMins - st.prevChangeMin + 1440) % 1440;
-          fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
-          cardEl.classList.add('closed');
-        }
+        const w = document.createElement('div');
+        w.className = 'wcell';
+        w.innerHTML = `<div class="dtop"><span>Week</span><span></span></div>
+                       <div class="pnl ${wsum>=0?'pos':'neg'}" style="text-align:right">${fmt.format(wsum)}</div>`;
+        row.appendChild(w);
+        rowsEl.appendChild(row);
       });
     }
 
-    updateUI();
-    setInterval(updateUI, 1000);
+    render();
   </script>
 </body>
 </html>
