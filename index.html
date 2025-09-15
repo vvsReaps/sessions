@@ -108,6 +108,57 @@
     // Weekend closed: Fri 17:00 ET → Sun 17:00 ET
     const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
 
+    // ===== (NEW) AUDIO ALERTS =====
+    // Minimal Web Audio beeps; no UI changes.
+    const SOUND_ENABLED = true;
+    let audioCtx = null;
+    const prevStates = { asia: null, london: null, ny: null }; // track open/closed per session
+
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) audioCtx = new Ctx();
+      }
+    }
+    function playTone(freq = 880, durationMs = 180, type = 'sine', gain = 0.04) {
+      if (!SOUND_ENABLED) return;
+      ensureAudioCtx();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.value = gain;
+      osc.connect(g).connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      // quick attack/decay envelope to avoid clicks
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(gain, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+      osc.start(now);
+      osc.stop(now + durationMs / 1000 + 0.02);
+    }
+    function chimeOpen() {
+      // two quick ascending tones
+      playTone(880, 140, 'sine', 0.05);
+      setTimeout(() => playTone(1175, 160, 'sine', 0.05), 160);
+    }
+    function beepClose() {
+      // single short lower beep
+      playTone(440, 180, 'sine', 0.05);
+    }
+    function maybeAlert(sessionId, isOpenNow) {
+      const prev = prevStates[sessionId];
+      if (prev === null) { // skip initial load
+        prevStates[sessionId] = isOpenNow;
+        return;
+      }
+      if (prev !== isOpenNow) {
+        if (isOpenNow) chimeOpen(); else beepClose();
+        prevStates[sessionId] = isOpenNow;
+      }
+    }
+
     // ===== HELPERS =====
     const pad2 = n => n.toString().padStart(2,'0');
     const fmtHMS = ms => {
@@ -259,6 +310,10 @@
           let targetDay = s.id === 'asia' ? DOW.Sun : DOW.Mon;
           let targetMin = s.id === 'asia' ? 19*60 : (s.id === 'london' ? 3*60 : 8*60);
           const minsAhead = minutesUntilDOW(dayIdx, etMins, targetDay, targetMin);
+
+          // (NEW) Alert logic: treat as closed during weekend
+          maybeAlert(s.id, false);
+
           statusEl.textContent = 'CLOSED';
           labelEl.textContent  = 'Opens in';
           timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, minsAhead));
@@ -268,6 +323,10 @@
         }
 
         const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
+
+        // (NEW) Alert on state change
+        maybeAlert(s.id, st.isOpen);
+
         if (st.isOpen){
           statusEl.textContent = 'OPEN';
           labelEl.textContent  = 'Closes in';
@@ -290,6 +349,10 @@
 
     updateUI();
     setInterval(updateUI, 1000);
+
+    // (NEW) Resume audio context on first user interaction (required by some browsers)
+    window.addEventListener('click', ensureAudioCtx, { once: true, passive: true });
+    window.addEventListener('keydown', ensureAudioCtx, { once: true, passive: true });
   </script>
 </body>
 </html>
