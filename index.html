@@ -139,7 +139,7 @@
       return ctx.state === 'running';
     }
 
-    function playToneOnce(ctx, { freq=880, ms=180, type='sine', gain=0.05 }={}) {
+    function playToneOnce(ctx, { freq=880, ms=180, type='sine', gain=0.5 }={}) {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = type;
