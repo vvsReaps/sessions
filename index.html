@@ -88,6 +88,15 @@
     </div>
   </div>
 
+  <!-- Test Sound Button (floating, unobtrusive) -->
+  <button id="testSoundBtn"
+    style="position:fixed;bottom:20px;right:20px;z-index:999;
+           background:#2563eb;color:white;font-weight:600;
+           border:none;border-radius:999px;padding:12px 18px;
+           box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;">
+    Test Sound
+  </button>
+
   <script>
     // ===== SETTINGS =====
     const DISPLAY_TZ = 'America/New_York';
@@ -108,48 +117,61 @@
     // Weekend closed: Fri 17:00 ET → Sun 17:00 ET
     const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
 
-    // ===== (NEW) AUDIO ALERTS =====
-    // Minimal Web Audio beeps; no UI changes.
+    // ===== AUDIO ALERTS =====
     const SOUND_ENABLED = true;
     let audioCtx = null;
     const prevStates = { asia: null, london: null, ny: null }; // track open/closed per session
 
-    function ensureAudioCtx() {
-      if (!audioCtx) {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (Ctx) audioCtx = new Ctx();
-      }
+    function getAudioCtx() {
+      if (audioCtx) return audioCtx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+      return audioCtx;
     }
-    function playTone(freq = 880, durationMs = 180, type = 'sine', gain = 0.04) {
-      if (!SOUND_ENABLED) return;
-      ensureAudioCtx();
-      if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
+
+    async function resumeAudioCtx() {
+      const ctx = getAudioCtx();
+      if (!ctx) return false;
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch {}
+      }
+      return ctx.state === 'running';
+    }
+
+    function playToneOnce(ctx, { freq=880, ms=180, type='sine', gain=0.05 }={}) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
       g.gain.value = gain;
-      osc.connect(g).connect(audioCtx.destination);
-      const now = audioCtx.currentTime;
-      // quick attack/decay envelope to avoid clicks
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(gain, now + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
-      osc.start(now);
-      osc.stop(now + durationMs / 1000 + 0.02);
+      osc.connect(g).connect(ctx.destination);
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + ms/1000);
+      osc.start(t0);
+      osc.stop(t0 + ms/1000 + 0.02);
     }
+
+    async function playTone(freq = 880, durationMs = 180, type = 'sine', gain = 0.05) {
+      if (!SOUND_ENABLED) return;
+      const ok = await resumeAudioCtx();
+      if (!ok) return;
+      playToneOnce(audioCtx, { freq, ms: durationMs, type, gain });
+    }
+
     function chimeOpen() {
-      // two quick ascending tones
-      playTone(880, 140, 'sine', 0.05);
-      setTimeout(() => playTone(1175, 160, 'sine', 0.05), 160);
+      playTone(880, 140, 'sine', 0.06);
+      setTimeout(() => playTone(1175, 160, 'sine', 0.06), 170);
     }
     function beepClose() {
-      // single short lower beep
-      playTone(440, 180, 'sine', 0.05);
+      playTone(440, 180, 'sine', 0.06);
     }
+
     function maybeAlert(sessionId, isOpenNow) {
       const prev = prevStates[sessionId];
-      if (prev === null) { // skip initial load
+      if (prev === null) { // skip initial state to avoid false alarms
         prevStates[sessionId] = isOpenNow;
         return;
       }
@@ -158,6 +180,24 @@
         prevStates[sessionId] = isOpenNow;
       }
     }
+
+    // ===== UNLOCK AUDIO ON FIRST USER GESTURE (RELIABLE ON CHROME/SAFARI/IOS) =====
+    async function unlockAudio() {
+      const ok = await resumeAudioCtx();
+      if (!ok) return;
+      // play a near-inaudible blip to satisfy autoplay policy without changing UX
+      try { playToneOnce(audioCtx, { freq: 600, ms: 50, gain: 0.005 }); } catch {}
+      ['pointerdown','touchstart','mousedown','keydown'].forEach(ev =>
+        window.removeEventListener(ev, unlockAudio, { passive: true })
+      );
+    }
+    ['pointerdown','touchstart','mousedown','keydown'].forEach(ev =>
+      window.addEventListener(ev, unlockAudio, { passive: true, once: false })
+    );
+    // If tab was backgrounded, resume when visible again
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') { resumeAudioCtx(); }
+    });
 
     // ===== HELPERS =====
     const pad2 = n => n.toString().padStart(2,'0');
@@ -306,12 +346,11 @@
         document.getElementById(`${s.id}CloseET`).textContent = formatETLabel(s.closeET);
 
         if (weekend){
-          // All closed until after weekend
+          // treat as closed during weekend
           let targetDay = s.id === 'asia' ? DOW.Sun : DOW.Mon;
           let targetMin = s.id === 'asia' ? 19*60 : (s.id === 'london' ? 3*60 : 8*60);
           const minsAhead = minutesUntilDOW(dayIdx, etMins, targetDay, targetMin);
 
-          // (NEW) Alert logic: treat as closed during weekend
           maybeAlert(s.id, false);
 
           statusEl.textContent = 'CLOSED';
@@ -323,8 +362,6 @@
         }
 
         const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
-
-        // (NEW) Alert on state change
         maybeAlert(s.id, st.isOpen);
 
         if (st.isOpen){
@@ -350,9 +387,12 @@
     updateUI();
     setInterval(updateUI, 1000);
 
-    // (NEW) Resume audio context on first user interaction (required by some browsers)
-    window.addEventListener('click', ensureAudioCtx, { once: true, passive: true });
-    window.addEventListener('keydown', ensureAudioCtx, { once: true, passive: true });
+    // === Test Sound Button handler ===
+    document.getElementById('testSoundBtn').addEventListener('click', async () => {
+      await resumeAudioCtx();
+      chimeOpen();
+      setTimeout(() => beepClose(), 1000);
+    });
   </script>
 </body>
 </html>
