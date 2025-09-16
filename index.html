@@ -154,7 +154,7 @@
       osc.stop(t0 + ms/1000 + 0.02);
     }
 
-    async function playTone(freq = 880, durationMs = 180, type = 'sine', gain = 0.05) {
+    async function playTone(freq = 880, durationMs = 180, type = 'sine', gain = 50) {
       if (!SOUND_ENABLED) return;
       const ok = await resumeAudioCtx();
       if (!ok) return;
@@ -162,11 +162,11 @@
     }
 
     function chimeOpen() {
-      playTone(880, 140, 'sine', 0.06);
+      playTone(880, 140, 'sine', 50);
       setTimeout(() => playTone(1175, 160, 'sine', 0.06), 170);
     }
     function beepClose() {
-      playTone(440, 180, 'sine', 0.06);
+      playTone(440, 180, 'sine', 50);
     }
 
     function maybeAlert(sessionId, isOpenNow) {
