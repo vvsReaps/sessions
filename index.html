@@ -6,7 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { --bg:#0f1115; --muted:#9aa0a6; --card:#151923; --ring:#202637; --text:#e6e9ef;
-            --asia:#3b82f6; --london:#22c55e; --ny:#ef4444; --closed:#6b7280; }
+            --asia:#3b82f6; --london:#22c55e; --ny:#ef4444; --closed:#6b7280;
+            --pre:#a78bfa; --regular:#f59e0b; --post:#06b6d4;
+            --macro1:#f97316; --macro2:#eab308; }
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
          background:radial-gradient(1200px 800px at 50% -10%,#1b2130 0%,var(--bg) 55%);
@@ -24,9 +26,11 @@
       border-width: 2px;
       letter-spacing: .2px;
     }
+    .section{margin:22px 0 10px;font-weight:800;letter-spacing:.3px;color:#cbd5e1;text-transform:uppercase;font-size:12px;opacity:.9}
     .strong{font-weight:700}
     .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+    .grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media (max-width:860px){.grid,.grid.two{grid-template-columns:1fr}}
     .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 40%),var(--card);
           border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05)}
     .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
@@ -42,6 +46,11 @@
     .london .dot,.london .fill{background:var(--london)}
     .newyork .dot,.newyork .fill{background:var(--ny)}
     .closed .dot{background:var(--closed)}
+    .pre .dot,.pre .fill{background:var(--pre)}
+    .regular .dot,.regular .fill{background:var(--regular)}
+    .post .dot,.post .fill{background:var(--post)}
+    .macro830 .dot,.macro830 .fill{background:var(--macro1)}
+    .macro1000 .dot,.macro1000 .fill{background:var(--macro2)}
   </style>
 </head>
 <body>
@@ -54,6 +63,13 @@
       <span class="pill" id="asiaWindow"></span>
       <span class="pill" id="londonWindow"></span>
       <span class="pill" id="nyWindow"></span>
+      <br/>
+      <span class="pill" id="preWindow"></span>
+      <span class="pill" id="regularWindow"></span>
+      <span class="pill" id="postWindow"></span>
+      <br/>
+      <span class="pill" id="macro830Window"></span>
+      <span class="pill" id="macro1000Window"></span>
     </div>
 
     <div class="banner">
@@ -61,6 +77,7 @@
       <div class="status" id="maintStatus">—</div>
     </div>
 
+    <div class="section">Global FX Sessions</div>
     <div class="grid">
       <div class="card asia" id="asiaCard">
         <div class="head"><div class="title"><span class="dot"></span> Asia</div><div class="badge" id="asiaStatus">—</div></div>
@@ -86,6 +103,52 @@
         <div class="row"><span>Open: <strong id="nyOpenET"></strong></span><span>Close: <strong id="nyCloseET"></strong></span></div>
       </div>
     </div>
+
+    <div class="section">US Equity (Retail) Sessions</div>
+    <div class="grid">
+      <div class="card pre" id="preCard">
+        <div class="head"><div class="title"><span class="dot"></span> Pre-Market</div><div class="badge" id="preStatus">—</div></div>
+        <div class="label" id="preLabel">—</div>
+        <div class="timer" id="preTimer">--:--:--</div>
+        <div class="bar"><div class="fill" id="preFill"></div></div>
+        <div class="row"><span>Open: <strong id="preOpenET"></strong></span><span>Close: <strong id="preCloseET"></strong></span></div>
+      </div>
+
+      <div class="card regular" id="regularCard">
+        <div class="head"><div class="title"><span class="dot"></span> Regular</div><div class="badge" id="regularStatus">—</div></div>
+        <div class="label" id="regularLabel">—</div>
+        <div class="timer" id="regularTimer">--:--:--</div>
+        <div class="bar"><div class="fill" id="regularFill"></div></div>
+        <div class="row"><span>Open: <strong id="regularOpenET"></strong></span><span>Close: <strong id="regularCloseET"></strong></span></div>
+      </div>
+
+      <div class="card post" id="postCard">
+        <div class="head"><div class="title"><span class="dot"></span> After-Hours</div><div class="badge" id="postStatus">—</div></div>
+        <div class="label" id="postLabel">—</div>
+        <div class="timer" id="postTimer">--:--:--</div>
+        <div class="bar"><div class="fill" id="postFill"></div></div>
+        <div class="row"><span>Open: <strong id="postOpenET"></strong></span><span>Close: <strong id="postCloseET"></strong></span></div>
+      </div>
+    </div>
+
+    <div class="section">Macro Windows (Typical US Releases)</div>
+    <div class="grid two">
+      <div class="card macro830" id="macro830Card">
+        <div class="head"><div class="title"><span class="dot"></span> 08:30 Data Window</div><div class="badge" id="macro830Status">—</div></div>
+        <div class="label" id="macro830Label">—</div>
+        <div class="timer" id="macro830Timer">--:--:--</div>
+        <div class="bar"><div class="fill" id="macro830Fill"></div></div>
+        <div class="row"><span>Open: <strong id="macro830OpenET"></strong></span><span>Close: <strong id="macro830CloseET"></strong></span></div>
+      </div>
+
+      <div class="card macro1000" id="macro1000Card">
+        <div class="head"><div class="title"><span class="dot"></span> 10:00 Data Window</div><div class="badge" id="macro1000Status">—</div></div>
+        <div class="label" id="macro1000Label">—</div>
+        <div class="timer" id="macro1000Timer">--:--:--</div>
+        <div class="bar"><div class="fill" id="macro1000Fill"></div></div>
+        <div class="row"><span>Open: <strong id="macro1000OpenET"></strong></span><span>Close: <strong id="macro1000CloseET"></strong></span></div>
+      </div>
+    </div>
   </div>
 
   <!-- Test Sound Button (floating, unobtrusive) -->
@@ -103,24 +166,37 @@
     const USE_FIXED_EST = false;       // set true to force fixed UTC-5
     const FIXED_EST_TZ = 'Etc/GMT+5';
 
-    // Sessions in ET: Asia 19:00–04:00, London 03:00–12:00, New York 08:00–17:00
+    // FX Sessions in ET
     const SESSIONS_ET = [
       { id:'asia',   name:'Asia',     openET:19*60, closeET:4*60,  wraps:true  },
       { id:'london', name:'London',   openET:3*60,  closeET:12*60, wraps:false },
       { id:'ny',     name:'New York', openET:8*60,  closeET:17*60, wraps:false }
     ];
 
-    // Maintenance: 17:00–18:00 ET
+    // Retail (US equities) in ET
+    const RETAIL_ET = [
+      { id:'pre',     name:'Pre-Market', openET:4*60,           closeET:9*60+30,  wraps:false },
+      { id:'regular', name:'Regular',    openET:9*60+30,        closeET:16*60,    wraps:false },
+      { id:'post',    name:'After-Hours',openET:16*60,          closeET:20*60,    wraps:false }
+    ];
+
+    // Macro windows (typical US release times) — weekdays only
+    const MACRO_WINDOWS = [
+      { id:'macro830',  name:'08:30 Data', openET:8*60+30,  closeET:9*60+30,  wraps:false },
+      { id:'macro1000', name:'10:00 Data', openET:10*60,    closeET:10*60+10, wraps:false }
+    ];
+
+    // Maintenance (FX): 17:00–18:00 ET
     const MAINT_START_ET = 17*60;
     const MAINT_END_ET   = 18*60;
 
-    // Weekend closed: Fri 17:00 ET → Sun 17:00 ET
+    // Weekend closed (FX & Retail baseline): Fri 17:00 ET → Sun 17:00 ET
     const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
 
     // ===== AUDIO ALERTS =====
     const SOUND_ENABLED = true;
     let audioCtx = null;
-    const prevStates = { asia: null, london: null, ny: null }; // track open/closed per session
+    const prevStates = { asia:null, london:null, ny:null, pre:null, regular:null, post:null, macro830:null, macro1000:null };
 
     function getAudioCtx() {
       if (audioCtx) return audioCtx;
@@ -129,63 +205,38 @@
       audioCtx = new Ctx();
       return audioCtx;
     }
-
     async function resumeAudioCtx() {
       const ctx = getAudioCtx();
       if (!ctx) return false;
-      if (ctx.state === 'suspended') {
-        try { await ctx.resume(); } catch {}
-      }
+      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch {} }
       return ctx.state === 'running';
     }
-
     function playToneOnce(ctx, { freq=880, ms=180, type='sine', gain=50 }={}) {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      g.gain.value = gain;
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.type = type; osc.frequency.value = freq; g.gain.value = gain;
       osc.connect(g).connect(ctx.destination);
       const t0 = ctx.currentTime;
       g.gain.setValueAtTime(0, t0);
       g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + ms/1000);
-      osc.start(t0);
-      osc.stop(t0 + ms/1000 + 0.02);
+      osc.start(t0); osc.stop(t0 + ms/1000 + 0.02);
     }
-
     async function playTone(freq = 880, durationMs = 180, type = 'sine', gain = 50) {
       if (!SOUND_ENABLED) return;
-      const ok = await resumeAudioCtx();
-      if (!ok) return;
+      const ok = await resumeAudioCtx(); if (!ok) return;
       playToneOnce(audioCtx, { freq, ms: durationMs, type, gain });
     }
-
-    function chimeOpen() {
-      playTone(880, 140, 'sine', 50);
-      setTimeout(() => playTone(1175, 160, 'sine', 0.06), 170);
-    }
-    function beepClose() {
-      playTone(440, 180, 'sine', 50);
-    }
-
+    function chimeOpen(){ playTone(880,140,'sine',50); setTimeout(()=>playTone(1175,160,'sine',0.06),170); }
+    function beepClose(){ playTone(440,180,'sine',50); }
     function maybeAlert(sessionId, isOpenNow) {
       const prev = prevStates[sessionId];
-      if (prev === null) { // skip initial state to avoid false alarms
-        prevStates[sessionId] = isOpenNow;
-        return;
-      }
-      if (prev !== isOpenNow) {
-        if (isOpenNow) chimeOpen(); else beepClose();
-        prevStates[sessionId] = isOpenNow;
-      }
+      if (prev === null) { prevStates[sessionId] = isOpenNow; return; }
+      if (prev !== isOpenNow) { if (isOpenNow) chimeOpen(); else beepClose(); prevStates[sessionId] = isOpenNow; }
     }
 
-    // ===== UNLOCK AUDIO ON FIRST USER GESTURE (RELIABLE ON CHROME/SAFARI/IOS) =====
+    // Unlock / resume audio on user gesture
     async function unlockAudio() {
-      const ok = await resumeAudioCtx();
-      if (!ok) return;
-      // play a near-inaudible blip to satisfy autoplay policy without changing UX
+      const ok = await resumeAudioCtx(); if (!ok) return;
       try { playToneOnce(audioCtx, { freq: 600, ms: 50, gain: 0.005 }); } catch {}
       ['pointerdown','touchstart','mousedown','keydown'].forEach(ev =>
         window.removeEventListener(ev, unlockAudio, { passive: true })
@@ -194,7 +245,6 @@
     ['pointerdown','touchstart','mousedown','keydown'].forEach(ev =>
       window.addEventListener(ev, unlockAudio, { passive: true, once: false })
     );
-    // If tab was backgrounded, resume when visible again
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') { resumeAudioCtx(); }
     });
@@ -210,17 +260,14 @@
 
     function partsInTZ(date, tz){
       return new Intl.DateTimeFormat('en-US', {
-        timeZone: tz,
-        year:'numeric', month:'2-digit', day:'2-digit',
+        timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
         hour:'2-digit', minute:'2-digit', second:'2-digit',
         weekday:'short', hour12:false
       }).formatToParts(date).reduce((a,p)=>{ a[p.type]=p.value; return a; }, {});
     }
     function etSeconds(date, tz){ const p=partsInTZ(date,tz); return (+p.hour)*3600+(+p.minute)*60+(+p.second); }
-    function etMinutes(date, tz){ return etSeconds(date,tz)/60; }
-    function etWeekdayIndex(date, tz){
-      const wd = partsInTZ(date, tz).weekday; return DOW[wd];
-    }
+    function etMinutes(date, tz){ return etSeconds(date, tz)/60; }
+    function etWeekdayIndex(date, tz){ const wd = partsInTZ(date, tz).weekday; return DOW[wd]; }
     function formatETLabel(mins){
       const h=Math.floor(((mins%1440)+1440)%1440/60);
       const m=Math.floor(((mins%60)+60)%60);
@@ -235,7 +282,7 @@
     }
     function msUntilFromET(nowSecs, minutesAhead){ return Math.max(0, minutesAhead)*60*1000; }
 
-    // Session math (handles wrap-around sessions like Asia)
+    // Core math (handles wrap-around sessions)
     function sessionStateET(nowMinET, openET, closeET, wraps){
       const inOpen = wraps ? (nowMinET>=openET || nowMinET<closeET)
                            : (nowMinET>=openET && nowMinET<closeET);
@@ -260,6 +307,7 @@
       if (nowDayIdx===DOW.Sun && nowMinET<17*60) return true;
       return false;
     }
+    function isWeekday(dayIdx){ return dayIdx!==DOW.Sat && dayIdx!==DOW.Sun; }
 
     // ===== RENDER =====
     function updateUI(){
@@ -277,42 +325,45 @@
       document.getElementById('etNow').textContent    = new Intl.DateTimeFormat([], { timeZone: tz, hour:'2-digit', minute:'2-digit', second:'2-digit' }).format(now);
       document.getElementById('tzLabel').textContent  = USE_FIXED_EST ? 'EST (fixed UTC-5)' : `ET (${tzShort})`;
 
-      // session window pills
+      // session window pills (FX)
       document.getElementById('asiaWindow').textContent   = `Asia ${formatETLabel(19*60)}–${formatETLabel(4*60)}`;
       document.getElementById('londonWindow').textContent = `London ${formatETLabel(3*60)}–${formatETLabel(12*60)}`;
       document.getElementById('nyWindow').textContent     = `New York ${formatETLabel(8*60)}–${formatETLabel(17*60)}`;
+
+      // retail pills
+      document.getElementById('preWindow').textContent     = `Pre ${formatETLabel(4*60)}–${formatETLabel(9*60+30)}`;
+      document.getElementById('regularWindow').textContent = `Regular ${formatETLabel(9*60+30)}–${formatETLabel(16*60)}`;
+      document.getElementById('postWindow').textContent    = `After ${formatETLabel(16*60)}–${formatETLabel(20*60)}`;
+
+      // macro pills
+      document.getElementById('macro830Window').textContent  = `Macro ${formatETLabel(8*60+30)}–${formatETLabel(9*60+30)}`;
+      document.getElementById('macro1000Window').textContent = `Macro ${formatETLabel(10*60)}–${formatETLabel(10*60+10)}`;
 
       const weekend = isWeekendClosed(dayIdx, etMins);
       const lullEl  = document.getElementById('lullStatus');
       const maintEl = document.getElementById('maintStatus');
 
+      // ----- Banner: FX open/closed + maintenance -----
       if (weekend){
-        // Weekend banner
         const minsToAsiaSun = minutesUntilDOW(dayIdx, etMins, DOW.Sun, 19*60);
         lullEl.innerHTML = `<span class="strong">Weekend — market closed</span> · Asia opens in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToAsiaSun))}</span>`;
         lullEl.classList.add('primary');
         const minsToMaintMon = minutesUntilDOW(dayIdx, etMins, DOW.Mon, 17*60);
         maintEl.innerHTML = `🔧 Maintenance resumes ${formatETLabel(17*60)} Mon · starts in <span class="strong">${fmtHMS(msUntilFromET(etSecs, minsToMaintMon))}</span>`;
       } else {
-        // Sessions open?
         const openNow = [];
         SESSIONS_ET.forEach(s => {
           const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
           if (st.isOpen) openNow.push(s.name);
         });
-
-        // Market-open gap after maintenance each trading day: 18:00–19:00 ET
         const betweenSessions = (etMins >= 18*60 && etMins < 19*60);
-
         if (openNow.length === 0){
-          // Next session to open
           let best = Infinity, who = '';
           SESSIONS_ET.forEach(s => {
             const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
             const mins = st.nextChangeMin - etMins < 0 ? (st.nextChangeMin - etMins + 1440) : (st.nextChangeMin - etMins);
             if (mins < best){ best = mins; who = s.name; }
           });
-
           if (betweenSessions){
             lullEl.innerHTML = `<span class="strong">Market OPEN — Between Sessions</span> · Asia session begins in <span class="strong">${fmtHMS(msUntilFromET(etSecs, best))}</span>`;
           } else {
@@ -324,7 +375,6 @@
           lullEl.classList.add('primary');
         }
 
-        // Maintenance banner (trading days only)
         const inMaint = etMins >= MAINT_START_ET && etMins < MAINT_END_ET;
         if (inMaint){
           maintEl.innerHTML = `🔧 <span class="strong">Maintenance / Rollover</span> ${formatETLabel(MAINT_START_ET)}–${formatETLabel(MAINT_END_ET)} · ends in <span class="strong">${fmtHMS(msUntilFromET(etSecs, MAINT_END_ET - etMins))}</span>`;
@@ -334,35 +384,41 @@
         }
       }
 
-      // ----- CARDS -----
-      SESSIONS_ET.forEach(s => {
-        const statusEl = document.getElementById(`${s.id}Status`);
-        const labelEl  = document.getElementById(`${s.id}Label`);
-        const timerEl  = document.getElementById(`${s.id}Timer`);
-        const fillEl   = document.getElementById(`${s.id}Fill`);
-        const cardEl   = document.getElementById(`${s.id}Card`);
+      // ----- Render helper -----
+      function renderCard(def, weekendOverride, weekdayOnly=false){
+        const statusEl = document.getElementById(`${def.id}Status`);
+        const labelEl  = document.getElementById(`${def.id}Label`);
+        const timerEl  = document.getElementById(`${def.id}Timer`);
+        const fillEl   = document.getElementById(`${def.id}Fill`);
+        const cardEl   = document.getElementById(`${def.id}Card`);
+        const openEl   = document.getElementById(`${def.id}OpenET`);
+        const closeEl  = document.getElementById(`${def.id}CloseET`);
 
-        document.getElementById(`${s.id}OpenET`).textContent  = formatETLabel(s.openET);
-        document.getElementById(`${s.id}CloseET`).textContent = formatETLabel(s.closeET);
+        if (openEl)  openEl.textContent  = formatETLabel(def.openET);
+        if (closeEl) closeEl.textContent = formatETLabel(def.closeET);
 
-        if (weekend){
-          // treat as closed during weekend
-          let targetDay = s.id === 'asia' ? DOW.Sun : DOW.Mon;
-          let targetMin = s.id === 'asia' ? 19*60 : (s.id === 'london' ? 3*60 : 8*60);
-          const minsAhead = minutesUntilDOW(dayIdx, etMins, targetDay, targetMin);
+        // If flagged weekday-only (macro), force closed on weekends
+        const forceClosedToday = weekendOverride || (weekdayOnly && !isWeekday(dayIdx));
 
-          maybeAlert(s.id, false);
+        if (forceClosedToday){
+          // Decide the next target (Mon or Sun depending on type)
+          let targetDay = DOW.Mon;
+          if (def.id === 'macro830' || def.id === 'macro1000' || def.id === 'pre' || def.id === 'regular' || def.id === 'post'){
+            targetDay = DOW.Mon;
+          } else if (def.id === 'asia'){ targetDay = DOW.Sun; }
 
+          const minsAhead = minutesUntilDOW(dayIdx, etMins, targetDay, def.openET);
+          maybeAlert(def.id, false);
           statusEl.textContent = 'CLOSED';
           labelEl.textContent  = 'Opens in';
           timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, minsAhead));
-          fillEl.style.width   = '0%';
+          if (fillEl) fillEl.style.width = '0%';
           cardEl.classList.add('closed');
           return;
         }
 
-        const st = sessionStateET(etMins, s.openET, s.closeET, s.wraps);
-        maybeAlert(s.id, st.isOpen);
+        const st = sessionStateET(etMins, def.openET, def.closeET, def.wraps);
+        maybeAlert(def.id, st.isOpen);
 
         if (st.isOpen){
           statusEl.textContent = 'OPEN';
@@ -370,7 +426,7 @@
           timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
           const total = (st.windowEnd - st.windowStart + 1440) % 1440 || 1440;
           const done  = (etMins - st.windowStart + 1440) % 1440;
-          fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
+          if (fillEl) fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
           cardEl.classList.remove('closed');
         } else {
           statusEl.textContent = 'CLOSED';
@@ -378,16 +434,23 @@
           timerEl.textContent  = fmtHMS(msUntilFromET(etSecs, (st.nextChangeMin - etMins + 1440) % 1440));
           const total = (st.nextChangeMin - st.prevChangeMin + 1440) % 1440 || 1440;
           const done  = (etMins - st.prevChangeMin + 1440) % 1440;
-          fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
+          if (fillEl) fillEl.style.width = `${(Math.min(done, total)/total*100).toFixed(2)}%`;
           cardEl.classList.add('closed');
         }
-      });
+      }
+
+      // FX cards
+      SESSIONS_ET.forEach(s => renderCard(s, weekend, false));
+      // Retail cards (closed on weekends and outside US trading days baseline)
+      RETAIL_ET.forEach(s => renderCard(s, weekend, true));
+      // Macro windows (weekdays only)
+      MACRO_WINDOWS.forEach(s => renderCard(s, weekend, true));
     }
 
     updateUI();
     setInterval(updateUI, 1000);
 
-    // === Test Sound Button handler ===
+    // Test Sound button
     document.getElementById('testSoundBtn').addEventListener('click', async () => {
       await resumeAudioCtx();
       chimeOpen();
